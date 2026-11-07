@@ -1,48 +1,45 @@
 # consent-ledger
 
-[![PyPI version](https://img.shields.io/pypi/v/trysac-consent-ledger)](https://pypi.org/project/trysac-consent-ledger/)
-[![License: MIT](https://img.shields.io/pypi/l/trysac-consent-ledger)](LICENSE)
-[![CI](https://github.com/Trysac/u186-consent-ledger/actions/workflows/ci.yml/badge.svg)](https://github.com/Trysac/u186-consent-ledger/actions/workflows/ci.yml)
+Append-only consent records per subject and purpose with policy versions, point-in-time status, stale consent detection, idempotent events and JSON export.
 
-Append-only consent records per subject and purpose with policy versions, point-in-time status, stale consent detection, idempotent events and JSON export
+## The Problem
 
-## Problem
+Products often record consent as a mutable boolean column that is overwritten on every change. This makes it impossible to reconstruct the state of consent at a specific time, to verify which policy version was in effect, or to audit a user's consent history. `consent-ledger` solves this by keeping consent as an append-only, versioned ledger that answers point-in-time questions deterministically.
 
-Describe in two or three sentences the concrete problem this utility solves, who hits it, and what
-they do today without it. Replace this paragraph when the first real feature lands.
+## Installation
 
-## Install
-
-```sh
-pip install trysac-consent-ledger
-# or
-uv add trysac-consent-ledger
+```bash
+pip install consent-ledger
 ```
-
-Requires Python 3.10 or newer. No runtime dependencies.
 
 ## Usage
 
 ```python
-import consent_ledger
+from datetime import datetime, timezone
+from consent_ledger import ConsentLedger
 
-# normalize() trims surrounding whitespace and lower-cases the text.
-print(consent_ledger.normalize("  Hello World "))  # -> "hello world"
-
-# Blank input is rejected explicitly instead of returning an empty string.
-try:
-    consent_ledger.normalize("   ")
-except ValueError as exc:
-    print(f"rejected: {exc}")
+ledger = ConsentLedger(clock=lambda: datetime.now(timezone.utc))
+ledger.record("usr_123", "marketing", "grant", "2026-01-01", source="web", event_id="evt_1")
+status = ledger.status("usr_123", "marketing", min_policy_version="2026-01-01")
+assert status.state == "granted"
+print(ledger.export("usr_123"))
 ```
 
-## Documentation
+## Summary of API
 
-- [Architecture](docs/ARCHITECTURE.md) and [decisions](docs/decisions/)
-- [Testing](docs/TESTING.md) and [security](docs/SECURITY.md)
-- [Project record](docs/PROJECT.md) and [stack](docs/STACK.md)
-- [Changelog](CHANGELOG.md) and [contributing guide](CONTRIBUTING.md)
+- `ConsentLedger(store, clock, on_event)`: Main entry point for recording and querying.
+- `record(...)`: Records a grant/withdraw event; fails on clock regression or conflict.
+- `status(...)`: Returns `granted`, `withdrawn`, `none`, or `stale` (point-in-time).
+- `history(...)`: Full event sequence for a subject.
+- `export(...)`: JSON representation of history.
 
-## License
+### Errors
+Raises `ConsentError` with codes: `event_conflict`, `clock_regression`, `invalid_clock`, `invalid_subject`, `invalid_purpose`, `invalid_policy_version`, `invalid_source`, `invalid_event_id`, `store_full`.
 
-[MIT](LICENSE) (c) 2026 Miguel Gomez
+## Why not a Consent SaaS?
+
+Using `consent-ledger` keeps your audit trail local and under your control, ensuring you have deterministic answers without relying on third-party availability or data egress costs.
+
+## Compliance
+
+This utility helps demonstrate consent and its withdrawal (GDPR Art. 7(1) and 7(3)) but does not decide lawfulness, does not cover erasure requests (deleting events is the store owner's decision) and is not legal advice. See [docs/SECURITY.md](docs/SECURITY.md).

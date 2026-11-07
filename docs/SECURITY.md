@@ -1,19 +1,13 @@
-# Security notes
+# Security and Privacy
 
-## Threat model
+## Threat Model
 
-`trysac-consent-ledger` is a pure library without I/O. The main risks are:
+### Defended
+- **Idempotency**: Prevents duplicate event insertion with the same `event_id`.
+- **Integrity**: `record` rejects events on clock regression, invalid time, or malformed data before persistence.
+- **Privacy**: The `on_event` callback purposefully excludes `subject_id` and `source` in its `LedgerEvent` telemetry to avoid PII leakage in monitoring systems.
+- **Capacity**: `InMemoryEventStore` enforces a hard `max_events` limit and refuses new events rather than silently evicting data, which is critical for compliance records.
 
-- **Supply chain**: a compromised dependency or CI action. Mitigation: no runtime dependencies,
-  Dependabot weekly updates, actions pinned to major versions, minimal workflow permissions.
-- **Leaked secrets**: tokens committed by mistake. Mitigation: `gitleaks` runs in the local gates
-  and in CI; `.env` files are git-ignored.
-- **Untrusted input**: callers may pass hostile strings. Mitigation: validate input and fail with
-  explicit exceptions; never `eval`, `exec` or deserialize untrusted data.
-
-## Publishing
-
-Releases are published to PyPI with trusted publishing (OIDC) when available, never with a
-long-lived token stored in the repository.
-
-To report a vulnerability, see [SECURITY.md](../SECURITY.md).
+### Not Defended
+- **Right to Erasure (GDPR Art. 17)**: This library is strictly append-only. Deleting or redacting events from the store is the responsibility of the store implementation or the owner's operational process.
+- **Legal Lawfulness**: This is a technical bookkeeping tool; it does not determine whether consent was lawfully obtained or sufficient for a specific processing activity.
