@@ -1,29 +1,24 @@
 # Architecture
 
-## Purpose
+## Design Overview
 
-`trysac-consent-ledger` is a small, dependency-free Python library: Append-only consent records per subject and purpose with policy versions, point-in-time status, stale consent detection, idempotent events and JSON export
+`consent_ledger` provides an append-only event-sourced ledger for user consent management.
 
-## Shape
+### Components
 
-```text
-caller code --> consent_ledger (public API in __init__.py)
-                    |
-                    +-- pure functions, no I/O, no global state
-```
+1. **ConsentLedger**: Orchestrates validation, ordering, event recording, and status queries.
+2. **ConsentEvent**: Frozen dataclass representing an immutable record in the ledger.
+3. **EventStore Protocol**: Decouples event persistence from ledger business logic.
+4. **InMemoryEventStore**: Default in-memory implementation with strict capacity limits to avoid silent event loss.
+5. **ConsentStatus**: Evaluates the effective consent state (`granted`, `withdrawn`, `stale`, `none`) at any point in time.
 
-- **Public API**: the names listed in `__all__` of `src/consent_ledger/__init__.py`. Anything else is
-  internal and may change without a major version.
-- **Errors**: invalid input raises built-in exceptions (`ValueError`, `TypeError`) with a clear
-  message; the library never prints or exits.
-- **Side effects**: none. If a feature needs I/O, isolate it in its own module behind a small
-  interface and record the choice in an ADR.
+### Validation Pipeline
 
-## Quality contract
+When `ConsentLedger.record` is invoked, operations follow a strict sequence:
+1. Field formats validation (subject_id, purpose, action, policy_version, source, event_id).
+2. Time validation (aware UTC datetime, non-regressing clock).
+3. Idempotency check (matches existing event or raises `event_conflict`).
+4. Capacity check on store.
+5. Event append and sequence increment.
 
-`scripts/check.py` is the single definition of the gates; `fabrica.json` tells the factory and CI
-how to run it. See [TESTING.md](TESTING.md).
-
-## Decisions
-
-Architecture decisions are recorded in [decisions/](decisions/) as numbered ADRs.
+On any failure, no event is committed to the store, and an `on_event` notification is dispatched without sensitive identifiers.

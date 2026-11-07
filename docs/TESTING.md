@@ -1,20 +1,13 @@
 # Testing
 
-## Running
+Tests are located in `tests/` and cover the public API behavior, validation logic, and compliance with the specification.
 
-```sh
-uv run pytest --cov=consent_ledger   # tests with coverage report
-uv run python scripts/check.py      # every gate, as CI and the factory run it
-```
-
-## Policy
-
-- Branch coverage of `src/consent_ledger` must stay at or above 80 %; the gate fails below it.
-- Tests exercise the public API (`import consent_ledger`) and assert every observable effect:
-  return values, raised exceptions and their messages.
-- Each bug fix starts with a failing test that reproduces it.
-- Tests are deterministic: no network, no wall clock, no dependence on test order.
-
-## Layout
-
-`tests/test_<module>.py` mirrors each public module. Shared fixtures go in `tests/conftest.py`.
+- `tests/test_consent_ledger.py`: Contains acceptance tests that verify:
+    - Recording grants/withdrawals.
+    - Point-in-time status queries.
+    - Idempotency checks.
+    - Clock regression prevention.
+    - Validation errors for inputs (subjects, purposes, policy versions).
+    - Capacity enforcement (`store_full`).
+    - JSON export format correctness.
+    - Telemetry notification logic for recorded and rejected events.

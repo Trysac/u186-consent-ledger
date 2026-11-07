@@ -9,4 +9,5 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Implement ConsentLedger with append-only events, point-in-time status, policy version tracking, and JSON export.
 - Initial project structure from the factory utility template.

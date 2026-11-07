@@ -2,25 +2,28 @@
 
 ## Objective
 
-Append-only consent records per subject and purpose with policy versions, point-in-time status, stale consent detection, idempotent events and JSON export
+To provide an append-only ledger for consent management that enables auditing, version tracking, and point-in-time status queries for subject purposes.
 
 ## Scope
 
-- In scope: the public API documented in [README.md](../README.md), typed and tested.
-- Out of scope: anything that needs runtime dependencies or I/O without an accepted ADR.
+- Append-only event storage for consent records.
+- Validation of events (format, clock, idempotency).
+- Point-in-time consent status evaluation.
+- Export of consent history to canonical JSON.
+- Support for `InMemoryEventStore` with strict capacity enforcement.
 
-## Timeline
+## Out of Scope
 
-| Date | Event |
-|---|---|
-| 2026 | Repository created from the factory utility template. |
+- Persistence adapters beyond the `EventStore` protocol.
+- Tamper evidence or hash chaining (combine with a dedicated audit log library if required).
+- UI or cookie banner integration.
 
-## Effort metrics
+## Factory run u186 (measured from API usage)
 
-Measured values only; a value that has not been measured stays "pending measurement".
+| Phase | Model | Batch | Input | Output | Cache write | Cache read | Cost (USD) |
+|---|---|---|---|---|---|---|---|
+| generation | gemini-3.8-flash | yes | 4472 | 9819 | 0 | 0 | 0.0201 |
+| audit | gemini-3.1-flash-lite | no | 94052 | 422 | 0 | 320803 | 0.0322 |
+| docs | gemini-3.1-flash-lite | no | 190580 | 1242 | 0 | 0 | 0.0495 |
 
-| Metric | Value |
-|---|---|
-| Tokens (input / output) | pending measurement |
-| Hours (human) | pending measurement |
-| Cost (USD) | pending measurement |
+Total: $0.1018. Prices: Anthropic list prices.
