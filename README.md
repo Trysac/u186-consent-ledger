@@ -8,8 +8,10 @@ Products often record consent as a mutable boolean column that is overwritten on
 
 ## Installation
 
+Not published to PyPI yet. Install it from GitHub:
+
 ```bash
-pip install consent-ledger
+pip install "git+https://github.com/Trysac/u186-consent-ledger"
 ```
 
 ## Usage
